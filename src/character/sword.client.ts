@@ -1,5 +1,7 @@
-import { Players, ReplicatedStorage } from "@rbxts/services";
+import { ReplicatedStorage, UserInputService } from "@rbxts/services";
 import { Character } from "shared/types/character";
+
+const SWORD_SLASH_ANIMATION_ID = "rbxassetid://109090003991256";
 
 const swordsFolder = ReplicatedStorage.FindFirstChild("swords");
 
@@ -40,12 +42,34 @@ function weldSword(sword: Instance) {
     weld.Name = "SwordWeld";
     weld.Part0 = character.RightHand;
     weld.Part1 = handle;
-    weld.C0 = gripAttachment.CFrame//.mul(CFrame.Angles(0, 0, math.rad(-90)));
+    weld.C0 = gripAttachment.CFrame;
     weld.Parent = character.RightHand;
+}
+
+function setUpInput() {
+    const animation = new Instance("Animation");
+    animation.AnimationId = SWORD_SLASH_ANIMATION_ID;
+
+    const character = script.Parent as Character | undefined;
+
+    if (character) {
+        const humanoid = character.Humanoid;
+        const track = humanoid.Animator.LoadAnimation(animation);
+
+        UserInputService.InputBegan.Connect((input, gameProcessed) => {
+            if (!gameProcessed) {
+                if (input.UserInputType === Enum.UserInputType.MouseButton1) {
+                    if (!track.IsPlaying) track.Play();
+                }
+            }
+        })
+    }
 }
 
 const sword = initializeSword();
 if (sword) {
     sword.Parent = script.Parent;
     weldSword(sword);
+
+    setUpInput();
 }
