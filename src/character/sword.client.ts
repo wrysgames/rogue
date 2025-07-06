@@ -82,22 +82,10 @@ function setUpInput(character: Character, sword: Instance) {
                     }
 
                     const trail = handle.FindFirstChild("Trail") as Trail | undefined;
-                    const tipAttachment = handle.FindFirstChild("Tip") as Attachment | undefined;
-                    const gripAttachment = handle.FindFirstChild("RightGripAttachment") as Attachment | undefined;
 
                     const bladeHitboxFolder = handle.FindFirstChild("BladeHitbox") as Folder | undefined;
 
                     if (!bladeHitboxFolder) {
-                        return;
-                    }
-
-                    //print("Found Tip Attachment", tipAttachment);
-
-                    if (!tipAttachment || tipAttachment.ClassName !== "Attachment") {
-                        return;
-                    }
-
-                    if (!gripAttachment || gripAttachment.ClassName !== "Attachment") {
                         return;
                     }
 
@@ -114,9 +102,6 @@ function setUpInput(character: Character, sword: Instance) {
                     }
 
                     const renderStep = RunService.RenderStepped.Connect((dt) => {
-                        const tipPos = tipAttachment.WorldPosition;
-                        const hiltPos = gripAttachment.WorldPosition;
-
                         // Draw a ray from the previous tip position to the current tip position for a continuous trail
                         for (const attachments of lastTipPositions) {
                             const attachment = attachments[0];
