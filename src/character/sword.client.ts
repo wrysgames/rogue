@@ -81,6 +81,7 @@ function setUpInput(character: Character, sword: Instance) {
                         return error("Could not find handle for the sword");
                     }
 
+                    const trail = handle.FindFirstChild("Trail") as Trail | undefined;
                     const tipAttachment = handle.FindFirstChild("Tip") as Attachment | undefined;
                     const gripAttachment = handle.FindFirstChild("RightGripAttachment") as Attachment | undefined;
                     //print("Found Tip Attachment", tipAttachment);
@@ -93,29 +94,41 @@ function setUpInput(character: Character, sword: Instance) {
                         return;
                     }
 
+                    if (trail) {
+                        trail.Enabled = true;
+                    }
+
                     // detect hits every frame
+                    let lastTipPosition: Vector3 | undefined = undefined;
 
                     const renderStep = RunService.RenderStepped.Connect((dt) => {
-                        // cast a ray at the tip attachment
                         const tipPos = tipAttachment.WorldPosition;
                         const hiltPos = gripAttachment.WorldPosition;
 
+                        // Draw a ray from the previous tip position to the current tip position for a continuous trail
+                        if (lastTipPosition) {
+                            const tipDirection = tipPos.sub(lastTipPosition);
+                            if (tipDirection.Magnitude > 0.01) {
+                                const rayPart = createRayVisual(lastTipPosition, tipPos, tipDirection);
+                                task.delay(0.5, () => rayPart.Destroy());
+                            }
+                        }
+                        lastTipPosition = tipPos;
+
+                        // Raycast from hilt to tip (for hit detection)
                         const direction = tipPos.sub(hiltPos);
                         const raycastParams = new RaycastParams();
                         raycastParams.FilterDescendantsInstances = [character];
                         raycastParams.FilterType = Enum.RaycastFilterType.Exclude;
-
                         const result = Workspace.Raycast(hiltPos, direction, raycastParams);
 
-                        // Visualize the ray
-                        const rayPart = createRayVisual(hiltPos, tipPos, direction);
-
-                        task.delay(0.5, () => rayPart.Destroy());
+                        // Visualize the hilt-to-tip ray (optional, comment out if not needed)
+                        // const rayPart = createRayVisual(hiltPos, tipPos, direction);
+                        // task.delay(0.5, () => rayPart.Destroy());
 
                         if (!result) {
                             return;
                         }
-
                         if (result.Instance.Parent?.IsA("Model")) {
                             if (result.Instance.Parent.FindFirstChild("Humanoid")) {
                                 print("HIT A HUMANOID")
@@ -125,6 +138,9 @@ function setUpInput(character: Character, sword: Instance) {
 
                     track.Stopped.Connect(() => {
                         renderStep.Disconnect();
+                        if (trail) {
+                            trail.Enabled = false;
+                        }
                     })
                 }
             }
