@@ -1,9 +1,10 @@
-import { ReplicatedStorage, UserInputService } from "@rbxts/services";
+import { Players, ReplicatedStorage, UserInputService } from "@rbxts/services";
 import { Character } from "shared/types/character";
 
 const SWORD_SLASH_ANIMATION_ID = "rbxassetid://109090003991256";
 
 const swordsFolder = ReplicatedStorage.FindFirstChild("swords");
+const player = Players.LocalPlayer;
 
 function initializeSword(): Instance | undefined {
     if (swordsFolder === undefined) {
@@ -21,7 +22,7 @@ function initializeSword(): Instance | undefined {
     return clonedSword;
 }
 
-function weldSword(sword: Instance) {
+function weldSword(sword: Instance, character: Model) {
     const handle = sword.FindFirstChild("Handle") as BasePart | undefined;
 
     if (handle === undefined) {
@@ -35,41 +36,39 @@ function weldSword(sword: Instance) {
     }
 
     // get the character
-    const character = script.Parent as Character;
-    
+    const rightHand = character.WaitForChild("RightHand") as BasePart;
+
     // create a weld
     const weld = new Instance("Motor6D");
     weld.Name = "SwordWeld";
-    weld.Part0 = character.RightHand;
+    weld.Part0 = rightHand;
     weld.Part1 = handle;
     weld.C0 = gripAttachment.CFrame;
-    weld.Parent = character.RightHand;
+    weld.Parent = rightHand;
 }
 
-function setUpInput() {
+function setUpInput(character: Character) {
     const animation = new Instance("Animation");
     animation.AnimationId = SWORD_SLASH_ANIMATION_ID;
 
-    const character = script.Parent as Character | undefined;
+    const humanoid = character.Humanoid;
+    const track = humanoid.Animator.LoadAnimation(animation);
 
-    if (character) {
-        const humanoid = character.Humanoid;
-        const track = humanoid.Animator.LoadAnimation(animation);
-
-        UserInputService.InputBegan.Connect((input, gameProcessed) => {
-            if (!gameProcessed) {
-                if (input.UserInputType === Enum.UserInputType.MouseButton1) {
-                    if (!track.IsPlaying) track.Play();
-                }
+    UserInputService.InputBegan.Connect((input, gameProcessed) => {
+        if (!gameProcessed) {
+            if (input.UserInputType === Enum.UserInputType.MouseButton1) {
+                if (!track.IsPlaying) track.Play();
             }
-        })
-    }
+        }
+    })
 }
 
 const sword = initializeSword();
+const character = script.Parent as Character;
+
 if (sword) {
     sword.Parent = script.Parent;
-    weldSword(sword);
-
-    setUpInput();
+    weldSword(sword, character);
+    setUpInput(character);
 }
+
