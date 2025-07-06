@@ -1,4 +1,4 @@
-import { Players, ReplicatedStorage, UserInputService } from "@rbxts/services";
+import { Players, ReplicatedStorage, RunService, UserInputService, Workspace } from "@rbxts/services";
 import { Character } from "shared/types/character";
 
 const SWORD_SLASH_ANIMATION_ID = "rbxassetid://109090003991256";
@@ -47,7 +47,20 @@ function weldSword(sword: Instance, character: Model) {
     weld.Parent = rightHand;
 }
 
-function setUpInput(character: Character) {
+function createRayVisual(startPos: Vector3, endPos: Vector3, direction: Vector3) {
+    const rayPart = new Instance("Part");
+    rayPart.Anchored = true;
+    rayPart.CanCollide = false;
+    rayPart.Color = Color3.fromRGB(255, 0, 0);
+    rayPart.Transparency = 0.5;
+    rayPart.Material = Enum.Material.Neon;
+    rayPart.Size = new Vector3(0.1, 0.1, direction.Magnitude);
+    rayPart.CFrame = new CFrame(startPos, endPos).mul(new CFrame(0, 0, -direction.Magnitude / 2));
+    rayPart.Parent = Workspace;
+    return rayPart;
+}
+
+function setUpInput(character: Character, sword: Instance) {
     const animation = new Instance("Animation");
     animation.AnimationId = SWORD_SLASH_ANIMATION_ID;
 
@@ -57,7 +70,63 @@ function setUpInput(character: Character) {
     UserInputService.InputBegan.Connect((input, gameProcessed) => {
         if (!gameProcessed) {
             if (input.UserInputType === Enum.UserInputType.MouseButton1) {
-                if (!track.IsPlaying) track.Play();
+                if (!track.IsPlaying) {
+                    //print("Registered a sword slash");
+
+                    track.Play();
+
+                    const handle = sword.FindFirstChild("Handle") as BasePart | undefined;
+
+                    if (!handle) {
+                        return error("Could not find handle for the sword");
+                    }
+
+                    const tipAttachment = handle.FindFirstChild("Tip") as Attachment | undefined;
+                    const gripAttachment = handle.FindFirstChild("RightGripAttachment") as Attachment | undefined;
+                    //print("Found Tip Attachment", tipAttachment);
+
+                    if (!tipAttachment || tipAttachment.ClassName !== "Attachment") {
+                        return;
+                    }
+
+                    if (!gripAttachment || gripAttachment.ClassName !== "Attachment") {
+                        return;
+                    }
+
+                    // detect hits every frame
+
+                    const renderStep = RunService.RenderStepped.Connect((dt) => {
+                        // cast a ray at the tip attachment
+                        const tipPos = tipAttachment.WorldPosition;
+                        const hiltPos = gripAttachment.WorldPosition;
+
+                        const direction = tipPos.sub(hiltPos);
+                        const raycastParams = new RaycastParams();
+                        raycastParams.FilterDescendantsInstances = [character];
+                        raycastParams.FilterType = Enum.RaycastFilterType.Exclude;
+
+                        const result = Workspace.Raycast(hiltPos, direction, raycastParams);
+
+                        // Visualize the ray
+                        const rayPart = createRayVisual(hiltPos, tipPos, direction);
+
+                        task.delay(0.5, () => rayPart.Destroy());
+
+                        if (!result) {
+                            return;
+                        }
+
+                        if (result.Instance.Parent?.IsA("Model")) {
+                            if (result.Instance.Parent.FindFirstChild("Humanoid")) {
+                                print("HIT A HUMANOID")
+                            }
+                        }
+                    })
+
+                    track.Stopped.Connect(() => {
+                        renderStep.Disconnect();
+                    })
+                }
             }
         }
     })
@@ -69,6 +138,6 @@ const character = script.Parent as Character;
 if (sword) {
     sword.Parent = script.Parent;
     weldSword(sword, character);
-    setUpInput(character);
+    setUpInput(character, sword);
 }
 
