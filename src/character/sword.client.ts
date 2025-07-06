@@ -84,6 +84,13 @@ function setUpInput(character: Character, sword: Instance) {
                     const trail = handle.FindFirstChild("Trail") as Trail | undefined;
                     const tipAttachment = handle.FindFirstChild("Tip") as Attachment | undefined;
                     const gripAttachment = handle.FindFirstChild("RightGripAttachment") as Attachment | undefined;
+
+                    const bladeHitboxFolder = handle.FindFirstChild("BladeHitbox") as Folder | undefined;
+
+                    if (!bladeHitboxFolder) {
+                        return;
+                    }
+
                     //print("Found Tip Attachment", tipAttachment);
 
                     if (!tipAttachment || tipAttachment.ClassName !== "Attachment") {
@@ -98,22 +105,38 @@ function setUpInput(character: Character, sword: Instance) {
                         trail.Enabled = true;
                     }
 
-                    // detect hits every frame
-                    let lastTipPosition: Vector3 | undefined = undefined;
+                    const lastTipPositions: Map<Attachment, Vector3 | undefined> = new Map();
+
+                    for (const attachment of bladeHitboxFolder.GetChildren()) {
+                        if (attachment.IsA("Attachment")) {
+                            lastTipPositions.set(attachment, attachment.WorldPosition);
+                        }
+                    }
+
+                    print(lastTipPositions.size());
 
                     const renderStep = RunService.RenderStepped.Connect((dt) => {
                         const tipPos = tipAttachment.WorldPosition;
                         const hiltPos = gripAttachment.WorldPosition;
 
                         // Draw a ray from the previous tip position to the current tip position for a continuous trail
-                        if (lastTipPosition) {
-                            const tipDirection = tipPos.sub(lastTipPosition);
-                            if (tipDirection.Magnitude > 0.01) {
-                                const rayPart = createRayVisual(lastTipPosition, tipPos, tipDirection);
-                                task.delay(0.5, () => rayPart.Destroy());
+                        for (const attachments of lastTipPositions) {
+                            const attachment = attachments[0];
+                            const lastAttachmentPos = attachments[1];
+
+                            const currAttachmentPos = attachment.WorldPosition;
+
+                            if (lastAttachmentPos) {
+                                const direction = currAttachmentPos?.sub(lastAttachmentPos);
+                                if (direction.Magnitude > 0.01) {
+                                    const rayPart = createRayVisual(lastAttachmentPos, currAttachmentPos, direction);
+                                    task.delay(0.5, () => rayPart.Destroy());
+                                }
                             }
+
+                            lastTipPositions.set(attachment, currAttachmentPos);
+                            
                         }
-                        lastTipPosition = tipPos;
 
                         // Raycast from hilt to tip (for hit detection)
                         const direction = tipPos.sub(hiltPos);
