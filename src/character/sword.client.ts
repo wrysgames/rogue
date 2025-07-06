@@ -34,7 +34,7 @@ function weldSword(sword: Instance) {
     weld.Name = "SwordWeld";
     weld.Part0 = character.RightHand;
     weld.Part1 = handle;
-    weld.C0 = new CFrame(0, -1, 0.5).mul(CFrame.Angles(0, math.rad(90), 0));
+    weld.C0 = new CFrame(0, -0.25, 0).mul(CFrame.Angles(0, math.rad(180), math.rad(90)));
     weld.Parent = character.RightHand;
 }
 
