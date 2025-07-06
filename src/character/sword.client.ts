@@ -26,6 +26,12 @@ function weldSword(sword: Instance) {
         return error("Handle could not be found on the sword");
     }
 
+    const gripAttachment = handle.FindFirstChild("RightGripAttachment") as Attachment | undefined;
+
+    if (!gripAttachment) {
+        return error("Could not find an attachment");
+    }
+
     // get the character
     const character = script.Parent as Character;
     
@@ -34,7 +40,7 @@ function weldSword(sword: Instance) {
     weld.Name = "SwordWeld";
     weld.Part0 = character.RightHand;
     weld.Part1 = handle;
-    weld.C0 = new CFrame(0, -0.25, 0).mul(CFrame.Angles(0, math.rad(180), math.rad(90)));
+    weld.C0 = gripAttachment.CFrame//.mul(CFrame.Angles(0, 0, math.rad(-90)));
     weld.Parent = character.RightHand;
 }
 
