@@ -67,40 +67,53 @@ function setUpInput(character: Character, sword: Instance) {
     const humanoid = character.Humanoid;
     const track = humanoid.Animator.LoadAnimation(animation);
 
+    const lastTipPositions: Map<Attachment, Vector3 | undefined> = new Map();
+    const handle = sword.FindFirstChild("Handle") as BasePart | undefined;
+
+    if (!handle) {
+        return error("Could not find handle for the sword");
+    }
+
+    const trail = handle.FindFirstChild("Trail") as Trail | undefined;
+
+    const bladeHitboxFolder = handle.FindFirstChild("BladeHitbox") as Folder | undefined;
+
+    if (!bladeHitboxFolder) {
+        return;
+    }
+
+    for (const attachment of bladeHitboxFolder.GetChildren()) {
+        if (attachment.IsA("Attachment")) {
+            lastTipPositions.set(attachment, attachment.WorldPosition);
+        }
+    }
+
+    print(bladeHitboxFolder.GetChildren())
+
+    let lastSlashTime = 0;
+    const SLASH_COOLDOWN = 1.5; // seconds
+
     UserInputService.InputBegan.Connect((input, gameProcessed) => {
         if (!gameProcessed) {
             if (input.UserInputType === Enum.UserInputType.MouseButton1) {
+                const now = tick();
+                if (now - lastSlashTime < SLASH_COOLDOWN) {
+                    return;
+                }
                 if (!track.IsPlaying) {
+                    lastSlashTime = now;
                     //print("Registered a sword slash");
 
                     track.Play();
-
-                    const handle = sword.FindFirstChild("Handle") as BasePart | undefined;
-
-                    if (!handle) {
-                        return error("Could not find handle for the sword");
-                    }
-
-                    const trail = handle.FindFirstChild("Trail") as Trail | undefined;
-
-                    const bladeHitboxFolder = handle.FindFirstChild("BladeHitbox") as Folder | undefined;
-
-                    if (!bladeHitboxFolder) {
-                        return;
-                    }
 
                     if (trail) {
                         trail.Enabled = true;
                     }
 
-                    const lastTipPositions: Map<Attachment, Vector3 | undefined> = new Map();
-
-                    for (const attachment of bladeHitboxFolder.GetChildren()) {
-                        if (attachment.IsA("Attachment")) {
-                            lastTipPositions.set(attachment, attachment.WorldPosition);
-                        }
+                    for (const [attachment] of lastTipPositions) {
+                        lastTipPositions.set(attachment, attachment.WorldPosition);
                     }
-
+                    
                     const renderStep = RunService.RenderStepped.Connect((dt) => {
                         // Draw a ray from the previous tip position to the current tip position for a continuous trail
                         for (const attachments of lastTipPositions) {
@@ -122,8 +135,25 @@ function setUpInput(character: Character, sword: Instance) {
                                     raycastParams.FilterType = Enum.RaycastFilterType.Exclude;
                                     const result = Workspace.Raycast(lastAttachmentPos, direction, raycastParams);
                                     if (result && result.Instance.Parent?.IsA("Model")) {
-                                        if (result.Instance.Parent.FindFirstChild("Humanoid")) {
+                                        const npcModel = result.Instance.Parent;
+                                        const humanoid = npcModel.FindFirstChild("Humanoid");
+                                        if (humanoid) {
                                             print("HIT A HUMANOID (blade segment)");
+                                            // Make NPC glow white for a split second using Highlight
+                                            let highlight = npcModel.FindFirstChildOfClass("Highlight") as Highlight | undefined;
+                                            if (!highlight) {
+                                                highlight = new Instance("Highlight");
+                                                highlight.Parent = npcModel;
+                                            }
+                                            highlight.FillColor = Color3.fromRGB(255, 255, 255);
+                                            highlight.OutlineColor = Color3.fromRGB(255, 255, 255);
+                                            highlight.FillTransparency = 0.3;
+                                            highlight.OutlineTransparency = 0;
+                                            task.delay(0.15, () => {
+                                                if (highlight) {
+                                                    highlight.Destroy();
+                                                }
+                                            });
                                         }
                                     }
                                 }
