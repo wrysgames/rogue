@@ -1,4 +1,4 @@
-import { Players, ReplicatedStorage, RunService, UserInputService, Workspace } from "@rbxts/services";
+import { Players, ReplicatedStorage, RunService, SoundService, UserInputService, Workspace } from "@rbxts/services";
 import { Character } from "shared/types/character";
 
 const SWORD_SLASH_ANIMATION_ID = "rbxassetid://112018511458880";
@@ -60,6 +60,16 @@ function createRayVisual(startPos: Vector3, endPos: Vector3, direction: Vector3)
     return rayPart;
 }
 
+function playSound(soundId: string, volume: number = 0.5) {
+    const sound = new Instance("Sound");
+    sound.Parent = SoundService;
+    sound.SoundId = soundId;
+    sound.Play()
+    sound.Ended.Connect(() => {
+        sound.Destroy();
+    })
+}
+
 function setUpInput(character: Character, sword: Instance) {
     const animation = new Instance("Animation");
     animation.AnimationId = SWORD_SLASH_ANIMATION_ID;
@@ -113,6 +123,8 @@ function setUpInput(character: Character, sword: Instance) {
                     for (const [attachment] of lastTipPositions) {
                         lastTipPositions.set(attachment, attachment.WorldPosition);
                     }
+
+                    playSound("rbxassetid://7118966167"); // Sword slash
                     
                     const renderStep = RunService.RenderStepped.Connect((dt) => {
                         // Draw a ray from the previous tip position to the current tip position for a continuous trail
@@ -154,6 +166,9 @@ function setUpInput(character: Character, sword: Instance) {
                                                     highlight.Destroy();
                                                 }
                                             });
+
+                                            // Hit sound 
+                                            playSound("rbxassetid://6216173737", 1);
                                         }
                                     }
                                 }
