@@ -1,7 +1,7 @@
 import { Players, ReplicatedStorage, RunService, UserInputService, Workspace } from "@rbxts/services";
 import { Character } from "shared/types/character";
 
-const SWORD_SLASH_ANIMATION_ID = "rbxassetid://109090003991256";
+const SWORD_SLASH_ANIMATION_ID = "rbxassetid://112018511458880";
 
 const swordsFolder = ReplicatedStorage.FindFirstChild("swords");
 const player = Players.LocalPlayer;
@@ -113,8 +113,6 @@ function setUpInput(character: Character, sword: Instance) {
                         }
                     }
 
-                    print(lastTipPositions.size());
-
                     const renderStep = RunService.RenderStepped.Connect((dt) => {
                         const tipPos = tipAttachment.WorldPosition;
                         const hiltPos = gripAttachment.WorldPosition;
@@ -129,33 +127,24 @@ function setUpInput(character: Character, sword: Instance) {
                             if (lastAttachmentPos) {
                                 const direction = currAttachmentPos?.sub(lastAttachmentPos);
                                 if (direction.Magnitude > 0.01) {
+                                    // Visualize the ray
                                     const rayPart = createRayVisual(lastAttachmentPos, currAttachmentPos, direction);
                                     task.delay(0.5, () => rayPart.Destroy());
+
+                                    // Cast a ray for hit detection
+                                    const raycastParams = new RaycastParams();
+                                    raycastParams.FilterDescendantsInstances = [character];
+                                    raycastParams.FilterType = Enum.RaycastFilterType.Exclude;
+                                    const result = Workspace.Raycast(lastAttachmentPos, direction, raycastParams);
+                                    if (result && result.Instance.Parent?.IsA("Model")) {
+                                        if (result.Instance.Parent.FindFirstChild("Humanoid")) {
+                                            print("HIT A HUMANOID (blade segment)");
+                                        }
+                                    }
                                 }
                             }
 
                             lastTipPositions.set(attachment, currAttachmentPos);
-                            
-                        }
-
-                        // Raycast from hilt to tip (for hit detection)
-                        const direction = tipPos.sub(hiltPos);
-                        const raycastParams = new RaycastParams();
-                        raycastParams.FilterDescendantsInstances = [character];
-                        raycastParams.FilterType = Enum.RaycastFilterType.Exclude;
-                        const result = Workspace.Raycast(hiltPos, direction, raycastParams);
-
-                        // Visualize the hilt-to-tip ray (optional, comment out if not needed)
-                        // const rayPart = createRayVisual(hiltPos, tipPos, direction);
-                        // task.delay(0.5, () => rayPart.Destroy());
-
-                        if (!result) {
-                            return;
-                        }
-                        if (result.Instance.Parent?.IsA("Model")) {
-                            if (result.Instance.Parent.FindFirstChild("Humanoid")) {
-                                print("HIT A HUMANOID")
-                            }
                         }
                     })
 
