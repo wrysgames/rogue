@@ -17,7 +17,7 @@ const SWORD_SLASH_2_ANIMATION_ID = "rbxasssetid://104763596885311";
 // ORDERED BY COMBO
 const ATTACK_ANIMATIONS = [
     "rbxassetid://82296932537283", // Slash 1
-    "rbxassetid://104763596885311", // Slash 2
+    "rbxassetid://86722564801489", // Slash 2
 ];
 
 const loadedAnimations: AnimationTrack[] = [];
@@ -34,10 +34,9 @@ const swordsFolder = ReplicatedStorage.FindFirstChild("swords");
 // COMBO variables
 let comboIndex: number = 0;
 const comboResetTime: number = 0.7;
-const comboResetTask = undefined;
+let comboResetTask: thread | undefined = undefined;
 
 function startCombo() {
-
     if (comboIndex > loadedAnimations.size()) {
         comboIndex = 0;
     }
@@ -50,6 +49,25 @@ function startCombo() {
     }
 
     track.Play();
+
+    track.GetMarkerReachedSignal("Hit").Connect(() => {
+        // trigger the hitbox
+    })
+
+    // if the user waits too long, restart the combo
+    if (comboResetTask) {
+        task.cancel(comboResetTask);
+    }
+
+    comboResetTask = task.delay(comboResetTime, () => {
+        comboIndex = 0;
+    });
+
+    comboIndex++;
+
+    if (comboIndex > loadedAnimations.size()) {
+        comboIndex = 0;
+    }
 }
 function initializeSword(): Instance | undefined {
     if (swordsFolder === undefined) {
