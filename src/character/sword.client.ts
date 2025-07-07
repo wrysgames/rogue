@@ -1,12 +1,56 @@
 import { Players, ReplicatedStorage, RunService, SoundService, UserInputService, Workspace } from "@rbxts/services";
-import { Character } from "shared/types/character";
+import type { Character } from "shared/types/character";
+
+const CHARACTER = script.Parent as Character;
+const ANIMATOR = CHARACTER.Humanoid.Animator;
+
+// Get the player from the character
+const PLAYER = Players.GetPlayerFromCharacter(CHARACTER);
+
+if (!PLAYER) {
+    error("COULDN'T FIND PLAYER");
+}
 
 const SWORD_SLASH_ANIMATION_ID = "rbxassetid://82296932537283"; //"rbxassetid://112018511458880";
 const SWORD_SLASH_2_ANIMATION_ID = "rbxasssetid://104763596885311";
 
-const swordsFolder = ReplicatedStorage.FindFirstChild("swords");
-const player = Players.LocalPlayer;
+// ORDERED BY COMBO
+const ATTACK_ANIMATIONS = [
+    "rbxassetid://82296932537283", // Slash 1
+    "rbxassetid://104763596885311", // Slash 2
+];
 
+const loadedAnimations: AnimationTrack[] = [];
+
+// Load the animations
+for (const animation of ATTACK_ANIMATIONS) {
+    const anim = new Instance("Animation");
+    anim.AnimationId = animation;
+    loadedAnimations.push(ANIMATOR.LoadAnimation(anim));
+};
+
+const swordsFolder = ReplicatedStorage.FindFirstChild("swords");
+
+// COMBO variables
+let comboIndex: number = 0;
+const comboResetTime: number = 0.7;
+const comboResetTask = undefined;
+
+function startCombo() {
+
+    if (comboIndex > loadedAnimations.size()) {
+        comboIndex = 0;
+    }
+
+    const track = loadedAnimations[comboIndex];
+    if (!track) return;
+
+    for (const playing of ANIMATOR.GetPlayingAnimationTracks()) {
+        playing.Stop();
+    }
+
+    track.Play();
+}
 function initializeSword(): Instance | undefined {
     if (swordsFolder === undefined) {
         return error("Could not find the swords folder in ReplicatedStorage");
@@ -151,6 +195,8 @@ function setUpInput(character: Character, sword: Instance) {
     UserInputService.InputBegan.Connect((input, gameProcessed) => {
         if (!gameProcessed) {
             if (input.UserInputType === Enum.UserInputType.MouseButton1) {
+                startCombo();
+
                 const now = tick();
                 if (now - lastSlashTime < SLASH_COOLDOWN) {
                     return;
@@ -269,11 +315,10 @@ function setUpInput(character: Character, sword: Instance) {
 }
 
 const sword = initializeSword();
-const character = script.Parent as Character;
 
 if (sword) {
     sword.Parent = script.Parent;
-    weldSword(sword, character);
-    setUpInput(character, sword);
+    weldSword(sword, CHARACTER);
+    setUpInput(CHARACTER, sword);
 }
 
