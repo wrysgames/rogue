@@ -1,7 +1,7 @@
 import { Players, ReplicatedStorage, RunService, SoundService, UserInputService, Workspace } from "@rbxts/services";
 import { Character } from "shared/types/character";
 
-const SWORD_SLASH_ANIMATION_ID = "rbxassetid://112018511458880";
+const SWORD_SLASH_ANIMATION_ID = "rbxassetid://82296932537283"; //"rbxassetid://112018511458880";
 
 const swordsFolder = ReplicatedStorage.FindFirstChild("swords");
 const player = Players.LocalPlayer;
@@ -60,6 +60,23 @@ function createRayVisual(startPos: Vector3, endPos: Vector3, direction: Vector3)
     return rayPart;
 }
 
+function highlightHitEnemy(npcModel: Model) {
+    let highlight = npcModel.FindFirstChildOfClass("Highlight") as Highlight | undefined;
+    if (!highlight) {
+        highlight = new Instance("Highlight");
+        highlight.Parent = npcModel;
+    }
+    highlight.FillColor = Color3.fromRGB(255, 255, 255);
+    highlight.OutlineColor = Color3.fromRGB(255, 255, 255);
+    highlight.FillTransparency = 0.3;
+    highlight.OutlineTransparency = 0;
+    task.delay(0.15, () => {
+        if (highlight) {
+            highlight.Destroy();
+        }
+    });
+}
+
 function playSound(soundId: string, volume: number = 0.5) {
     const sound = new Instance("Sound");
     sound.Parent = SoundService;
@@ -103,6 +120,8 @@ function setUpInput(character: Character, sword: Instance) {
     let lastSlashTime = 0;
     const SLASH_COOLDOWN = 1.5; // seconds
 
+    let renderStep: RBXScriptConnection | undefined;
+
     UserInputService.InputBegan.Connect((input, gameProcessed) => {
         if (!gameProcessed) {
             if (input.UserInputType === Enum.UserInputType.MouseButton1) {
@@ -120,17 +139,23 @@ function setUpInput(character: Character, sword: Instance) {
                         trail.Enabled = true;
                     }
 
-                    for (const [attachment] of lastTipPositions) {
-                        lastTipPositions.set(attachment, attachment.WorldPosition);
-                    }
-
                     playSound("rbxassetid://7118966167"); // Sword slash
                     
-                    const renderStep = RunService.RenderStepped.Connect((dt) => {
+
+                    const hitboxReachedSignal = track.GetMarkerReachedSignal("Hit").Connect(() => {
+                        for (const [attachment] of lastTipPositions) {
+                            lastTipPositions.set(attachment, attachment.WorldPosition);
+                        }
+
+                        const alreadyHitNpcs = new Map<Instance, boolean>();
+
+                        renderStep = RunService.RenderStepped.Connect((dt) => {
                         // Draw a ray from the previous tip position to the current tip position for a continuous trail
                         for (const attachments of lastTipPositions) {
                             const attachment = attachments[0];
                             const lastAttachmentPos = attachments[1];
+
+                            let hit: boolean = false;
 
                             const currAttachmentPos = attachment.WorldPosition;
 
@@ -146,26 +171,45 @@ function setUpInput(character: Character, sword: Instance) {
                                     raycastParams.FilterDescendantsInstances = [character];
                                     raycastParams.FilterType = Enum.RaycastFilterType.Exclude;
                                     const result = Workspace.Raycast(lastAttachmentPos, direction, raycastParams);
-                                    if (result && result.Instance.Parent?.IsA("Model")) {
-                                        const npcModel = result.Instance.Parent;
+
+                                    const overlapParams = new OverlapParams();
+                                    overlapParams.AddToFilter([character]);
+                                    overlapParams.FilterType = Enum.RaycastFilterType.Exclude;
+                                    const radialHitbox = Workspace.GetPartBoundsInRadius(attachment.WorldPosition, 2, overlapParams);
+
+                                    for (const part of radialHitbox) {
+                                        const npcModel = part.FindFirstAncestorWhichIsA("Model");
+
+                                        if (!npcModel) {
+                                            return;
+                                        }
+
                                         const humanoid = npcModel.FindFirstChild("Humanoid");
-                                        if (humanoid) {
-                                            print("HIT A HUMANOID (blade segment)");
+                                        if (humanoid && !alreadyHitNpcs.get(npcModel)) {
+                                            alreadyHitNpcs.set(npcModel, true);
+                                            print("HIT BY RADIUS");
+                                            hit = true;
+
+                                            highlightHitEnemy(npcModel);
+
+                                            // Hit sound 
+                                            playSound("rbxassetid://6216173737", 1);
+                                        }
+                                    }
+
+                                    if (result && result.Instance.FindFirstAncestorWhichIsA("Model") && result.Instance.FindFirstAncestorWhichIsA("Model")?.FindFirstChild("Humanoid")) {
+                                        const npcModel = result.Instance.FindFirstAncestorWhichIsA("Model");
+
+                                        if (!npcModel) {
+                                            return;
+                                        }
+
+                                        const humanoid = npcModel.FindFirstChild("Humanoid");
+                                        if (humanoid && !alreadyHitNpcs.get(npcModel)) {
+                                            alreadyHitNpcs.set(npcModel, true);
+                                            hit = true;
                                             // Make NPC glow white for a split second using Highlight
-                                            let highlight = npcModel.FindFirstChildOfClass("Highlight") as Highlight | undefined;
-                                            if (!highlight) {
-                                                highlight = new Instance("Highlight");
-                                                highlight.Parent = npcModel;
-                                            }
-                                            highlight.FillColor = Color3.fromRGB(255, 255, 255);
-                                            highlight.OutlineColor = Color3.fromRGB(255, 255, 255);
-                                            highlight.FillTransparency = 0.3;
-                                            highlight.OutlineTransparency = 0;
-                                            task.delay(0.15, () => {
-                                                if (highlight) {
-                                                    highlight.Destroy();
-                                                }
-                                            });
+                                            highlightHitEnemy(npcModel);
 
                                             // Hit sound 
                                             playSound("rbxassetid://6216173737", 1);
@@ -176,10 +220,14 @@ function setUpInput(character: Character, sword: Instance) {
 
                             lastTipPositions.set(attachment, currAttachmentPos);
                         }
-                    })
+                        })
+                    });
+
+                    
 
                     track.Stopped.Connect(() => {
-                        renderStep.Disconnect();
+                        hitboxReachedSignal.Disconnect();
+                        renderStep?.Disconnect();
                         if (trail) {
                             trail.Enabled = false;
                         }
