@@ -2,6 +2,7 @@ import { Players, ReplicatedStorage, RunService, SoundService, UserInputService,
 import { Character } from "shared/types/character";
 
 const SWORD_SLASH_ANIMATION_ID = "rbxassetid://82296932537283"; //"rbxassetid://112018511458880";
+const SWORD_SLASH_2_ANIMATION_ID = "rbxasssetid://104763596885311";
 
 const swordsFolder = ReplicatedStorage.FindFirstChild("swords");
 const player = Players.LocalPlayer;
