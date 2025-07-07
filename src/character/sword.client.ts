@@ -87,6 +87,31 @@ function playSound(soundId: string, volume: number = 0.5) {
     })
 }
 
+function hitPause(character: Model, duration: number) {
+    const humanoid = character.FindFirstChild("Humanoid") as Humanoid | undefined;
+    const root = character.FindFirstChild("HumanoidRootPart") as BasePart | undefined;
+    const animator = humanoid?.FindFirstChildWhichIsA("Animator");
+
+    if (!(humanoid && root && animator)) {
+        return;
+    }
+
+    for (const track of animator.GetPlayingAnimationTracks()) {
+        track.AdjustSpeed(0);
+    }
+
+    const tmpVelocity = root.AssemblyLinearVelocity;
+    root.AssemblyLinearVelocity = Vector3.zero;
+
+    task.wait(duration);
+
+    for (const track of animator.GetPlayingAnimationTracks()) {
+        track.AdjustSpeed(1);
+    }
+
+    root.AssemblyLinearVelocity = tmpVelocity;
+}
+
 function setUpInput(character: Character, sword: Instance) {
     const animation = new Instance("Animation");
     animation.AnimationId = SWORD_SLASH_ANIMATION_ID;
@@ -118,7 +143,7 @@ function setUpInput(character: Character, sword: Instance) {
     print(bladeHitboxFolder.GetChildren())
 
     let lastSlashTime = 0;
-    const SLASH_COOLDOWN = 1.5; // seconds
+    const SLASH_COOLDOWN = 0; // seconds
 
     let renderStep: RBXScriptConnection | undefined;
 
@@ -214,6 +239,10 @@ function setUpInput(character: Character, sword: Instance) {
                                             // Hit sound 
                                             playSound("rbxassetid://6216173737", 1);
                                         }
+                                    }
+
+                                    if (hit) {
+                                        hitPause(character, 0.07);
                                     }
                                 }
                             }
