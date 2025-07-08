@@ -158,7 +158,10 @@ function startCombo(character: Character, attachments: Attachment[], trail?: Tra
 	const track = loadedAnimations[comboIndex];
 	comboIndex++;
 
-	for (const playing of ANIMATOR.GetPlayingAnimationTracks()) playing.Stop();
+    if (comboIndex === 0) {
+        for (const playing of ANIMATOR.GetPlayingAnimationTracks()) playing.Stop();
+    }
+	
 	track.Play();
 
 	trail && (trail.Enabled = true);
