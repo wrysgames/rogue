@@ -3,340 +3,213 @@ import type { Character } from "shared/types/character";
 
 const CHARACTER = script.Parent as Character;
 const ANIMATOR = CHARACTER.Humanoid.Animator;
-
-// Get the player from the character
 const PLAYER = Players.GetPlayerFromCharacter(CHARACTER);
 
-if (!PLAYER) {
-    error("COULDN'T FIND PLAYER");
-}
+if (!PLAYER) error("COULDN'T FIND PLAYER");
 
-const SWORD_SLASH_ANIMATION_ID = "rbxassetid://82296932537283"; //"rbxassetid://112018511458880";
-const SWORD_SLASH_2_ANIMATION_ID = "rbxasssetid://104763596885311";
-
-// ORDERED BY COMBO
 const ATTACK_ANIMATIONS = [
-    "rbxassetid://82296932537283", // Slash 1
-    "rbxassetid://86722564801489", // Slash 2
+	"rbxassetid://82296932537283", // Slash 1
+	"rbxassetid://86722564801489", // Slash 2
 ];
 
-const loadedAnimations: AnimationTrack[] = [];
+const loadedAnimations = ATTACK_ANIMATIONS.map((id) => {
+	const anim = new Instance("Animation");
+	anim.AnimationId = id;
+	return ANIMATOR.LoadAnimation(anim);
+});
 
-// Load the animations
-for (const animation of ATTACK_ANIMATIONS) {
-    const anim = new Instance("Animation");
-    anim.AnimationId = animation;
-    loadedAnimations.push(ANIMATOR.LoadAnimation(anim));
-};
+let comboIndex = 0;
+const comboResetTime = 0.7;
+let comboResetTask: thread | undefined;
 
-const swordsFolder = ReplicatedStorage.FindFirstChild("swords");
+let isInComboCooldown = false;
+const comboCooldownDuration = 0.6; // time after the 2nd attack to attack again
 
-// COMBO variables
-let comboIndex: number = 0;
-const comboResetTime: number = 0.7;
-let comboResetTask: thread | undefined = undefined;
-
-function startCombo() {
-    if (comboIndex > loadedAnimations.size()) {
-        comboIndex = 0;
-    }
-
-    const track = loadedAnimations[comboIndex];
-    if (!track) return;
-
-    for (const playing of ANIMATOR.GetPlayingAnimationTracks()) {
-        playing.Stop();
-    }
-
-    track.Play();
-
-    track.GetMarkerReachedSignal("Hit").Connect(() => {
-        // trigger the hitbox
-    })
-
-    // if the user waits too long, restart the combo
-    if (comboResetTask) {
-        task.cancel(comboResetTask);
-    }
-
-    comboResetTask = task.delay(comboResetTime, () => {
-        comboIndex = 0;
-    });
-
-    comboIndex++;
-
-    if (comboIndex > loadedAnimations.size()) {
-        comboIndex = 0;
-    }
-}
-function initializeSword(): Instance | undefined {
-    if (swordsFolder === undefined) {
-        return error("Could not find the swords folder in ReplicatedStorage");
-    }
-
-    const woodenSword = swordsFolder.FindFirstChild("wooden_sword");
-
-    if (woodenSword === undefined) {
-        return error("Could not find the swords folder in ReplicatedStorage");
-    }
-
-    // Clone and attach the wooden sword
-    const clonedSword = woodenSword.Clone();
-    return clonedSword;
+function lockCombo(duration: number) {
+	isInComboCooldown = true;
+	task.delay(duration, () => {
+		isInComboCooldown = false;
+		comboIndex = 0;
+	});
 }
 
-function weldSword(sword: Instance, character: Model) {
-    const handle = sword.FindFirstChild("Handle") as BasePart | undefined;
-
-    if (handle === undefined) {
-        return error("Handle could not be found on the sword");
-    }
-
-    const gripAttachment = handle.FindFirstChild("RightGripAttachment") as Attachment | undefined;
-
-    if (!gripAttachment) {
-        return error("Could not find an attachment");
-    }
-
-    // get the character
-    const rightHand = character.WaitForChild("RightHand") as BasePart;
-
-    // create a weld
-    const weld = new Instance("Motor6D");
-    weld.Name = "SwordWeld";
-    weld.Part0 = rightHand;
-    weld.Part1 = handle;
-    weld.C0 = gripAttachment.CFrame;
-    weld.Parent = rightHand;
-}
-
-function createRayVisual(startPos: Vector3, endPos: Vector3, direction: Vector3) {
-    const rayPart = new Instance("Part");
-    rayPart.Anchored = true;
-    rayPart.CanCollide = false;
-    rayPart.Color = Color3.fromRGB(255, 0, 0);
-    rayPart.Transparency = 0.5;
-    rayPart.Material = Enum.Material.Neon;
-    rayPart.Size = new Vector3(0.1, 0.1, direction.Magnitude);
-    rayPart.CFrame = new CFrame(startPos, endPos).mul(new CFrame(0, 0, -direction.Magnitude / 2));
-    rayPart.Parent = Workspace;
-    return rayPart;
-}
-
-function highlightHitEnemy(npcModel: Model) {
-    let highlight = npcModel.FindFirstChildOfClass("Highlight") as Highlight | undefined;
-    if (!highlight) {
-        highlight = new Instance("Highlight");
-        highlight.Parent = npcModel;
-    }
-    highlight.FillColor = Color3.fromRGB(255, 255, 255);
-    highlight.OutlineColor = Color3.fromRGB(255, 255, 255);
-    highlight.FillTransparency = 0.3;
-    highlight.OutlineTransparency = 0;
-    task.delay(0.15, () => {
-        if (highlight) {
-            highlight.Destroy();
-        }
-    });
-}
-
-function playSound(soundId: string, volume: number = 0.5) {
-    const sound = new Instance("Sound");
-    sound.Parent = SoundService;
-    sound.SoundId = soundId;
-    sound.Play()
-    sound.Ended.Connect(() => {
-        sound.Destroy();
-    })
+function playSound(soundId: string, volume = 0.5) {
+	const sound = new Instance("Sound");
+	sound.Parent = SoundService;
+	sound.SoundId = soundId;
+	sound.Volume = volume;
+	sound.Play();
+	sound.Ended.Connect(() => sound.Destroy());
 }
 
 function hitPause(character: Model, duration: number) {
-    const humanoid = character.FindFirstChild("Humanoid") as Humanoid | undefined;
-    const root = character.FindFirstChild("HumanoidRootPart") as BasePart | undefined;
-    const animator = humanoid?.FindFirstChildWhichIsA("Animator");
+	const humanoid = character.FindFirstChild("Humanoid") as Humanoid | undefined;
+	const root = character.FindFirstChild("HumanoidRootPart") as BasePart | undefined;
+	const animator = humanoid?.FindFirstChildWhichIsA("Animator");
+	if (!(humanoid && root && animator)) return;
 
-    if (!(humanoid && root && animator)) {
-        return;
-    }
-
-    for (const track of animator.GetPlayingAnimationTracks()) {
-        track.AdjustSpeed(0);
-    }
-
-    const tmpVelocity = root.AssemblyLinearVelocity;
-    root.AssemblyLinearVelocity = Vector3.zero;
-
-    task.wait(duration);
-
-    for (const track of animator.GetPlayingAnimationTracks()) {
-        track.AdjustSpeed(1);
-    }
-
-    root.AssemblyLinearVelocity = tmpVelocity;
+	for (const track of animator.GetPlayingAnimationTracks()) track.AdjustSpeed(0);
+	const tmpVelocity = root.AssemblyLinearVelocity;
+	root.AssemblyLinearVelocity = Vector3.zero;
+	task.wait(duration);
+	for (const track of animator.GetPlayingAnimationTracks()) track.AdjustSpeed(1);
+	root.AssemblyLinearVelocity = tmpVelocity;
 }
 
-function setUpInput(character: Character, sword: Instance) {
-    const animation = new Instance("Animation");
-    animation.AnimationId = SWORD_SLASH_ANIMATION_ID;
+function highlightHitEnemy(npcModel: Model) {
+	let highlight = npcModel.FindFirstChildOfClass("Highlight") as Highlight | undefined;
+	if (!highlight) {
+		highlight = new Instance("Highlight");
+		highlight.Parent = npcModel;
+	}
+	highlight.FillColor = Color3.fromRGB(255, 255, 255);
+	highlight.OutlineColor = Color3.fromRGB(255, 255, 255);
+	highlight.FillTransparency = 0.3;
+	highlight.OutlineTransparency = 0;
+	task.delay(0.15, () => highlight?.Destroy());
+}
 
-    const humanoid = character.Humanoid;
-    const track = humanoid.Animator.LoadAnimation(animation);
+function createRayVisual(startPos: Vector3, endPos: Vector3, direction: Vector3) {
+	const rayPart = new Instance("Part");
+	rayPart.Anchored = true;
+	rayPart.CanCollide = false;
+	rayPart.Color = Color3.fromRGB(255, 0, 0);
+	rayPart.Transparency = 0.5;
+	rayPart.Material = Enum.Material.Neon;
+	rayPart.Size = new Vector3(0.1, 0.1, direction.Magnitude);
+	rayPart.CFrame = new CFrame(startPos, endPos).mul(new CFrame(0, 0, -direction.Magnitude / 2));
+	rayPart.Parent = Workspace;
+	return rayPart;
+}
 
-    const lastTipPositions: Map<Attachment, Vector3 | undefined> = new Map();
-    const handle = sword.FindFirstChild("Handle") as BasePart | undefined;
+function createHitboxRenderer(character: Character, attachments: Attachment[]) {
+	const lastTipPositions = new Map<Attachment, Vector3>();
+	attachments.forEach((att) => lastTipPositions.set(att, att.WorldPosition));
 
-    if (!handle) {
-        return error("Could not find handle for the sword");
-    }
+	const alreadyHitNpcs = new Map<Instance, boolean>();
 
-    const trail = handle.FindFirstChild("Trail") as Trail | undefined;
+    let hasHit = false;
 
-    const bladeHitboxFolder = handle.FindFirstChild("BladeHitbox") as Folder | undefined;
+	const renderConnection = RunService.RenderStepped.Connect(() => {
+		for (const [attachment, lastPos] of lastTipPositions) {
+			const currPos = attachment.WorldPosition;
+			const direction = currPos.sub(lastPos);
 
-    if (!bladeHitboxFolder) {
+			if (direction.Magnitude > 0.01) {
+				const rayPart = createRayVisual(lastPos, currPos, direction);
+
+				const raycastParams = new RaycastParams();
+				raycastParams.FilterDescendantsInstances = [character];
+				raycastParams.FilterType = Enum.RaycastFilterType.Exclude;
+				const result = Workspace.Raycast(lastPos, direction, raycastParams);
+
+				const overlapParams = new OverlapParams();
+				overlapParams.FilterDescendantsInstances = [character];
+				overlapParams.FilterType = Enum.RaycastFilterType.Exclude;
+				const parts = Workspace.GetPartBoundsInRadius(currPos, 2, overlapParams);
+
+				const hits = new Set<Model>();
+
+				for (const part of parts) {
+					const model = part.FindFirstAncestorOfClass("Model");
+					if (model && model.FindFirstChild("Humanoid") && !alreadyHitNpcs.has(model)) {
+						alreadyHitNpcs.set(model, true);
+						hits.add(model);
+					}
+				}
+
+				if (result) {
+					const model = result.Instance.FindFirstAncestorOfClass("Model");
+					if (model && model.FindFirstChild("Humanoid") && !alreadyHitNpcs.has(model)) {
+						alreadyHitNpcs.set(model, true);
+						hits.add(model);
+					}
+				}
+
+                if (!hasHit && hits.size() > 0) {
+                    hasHit = true;
+                    lockCombo(0.5); // Lock once per attack
+                }
+
+				for (const model of hits) {
+					highlightHitEnemy(model);
+					playSound("rbxassetid://6216173737", 1);
+					hitPause(character, 0.07);
+				}
+
+                // delete the ray visualizations
+                task.delay(0.1, () => rayPart.Destroy());
+			}
+			lastTipPositions.set(attachment, currPos);
+		}
+	});
+
+	return renderConnection;
+}
+
+function startCombo(character: Character, attachments: Attachment[], trail?: Trail) {
+    if (isInComboCooldown) return;
+
+	if (comboIndex >= loadedAnimations.size()) {
+        comboIndex = 0;
         return;
     }
 
-    for (const attachment of bladeHitboxFolder.GetChildren()) {
-        if (attachment.IsA("Attachment")) {
-            lastTipPositions.set(attachment, attachment.WorldPosition);
-        }
-    }
+	const track = loadedAnimations[comboIndex];
+	comboIndex++;
 
-    print(bladeHitboxFolder.GetChildren())
+	for (const playing of ANIMATOR.GetPlayingAnimationTracks()) playing.Stop();
+	track.Play();
 
-    let lastSlashTime = 0;
-    const SLASH_COOLDOWN = 0; // seconds
+	trail && (trail.Enabled = true);
+	playSound("rbxassetid://7118966167");
 
-    let renderStep: RBXScriptConnection | undefined;
+	const connection = track.GetMarkerReachedSignal("Hit").Connect(() => {
+		const renderConn = createHitboxRenderer(character, attachments);
+		track.Stopped.Connect(() => {
+			connection.Disconnect();
+			renderConn.Disconnect();
+			trail && (trail.Enabled = false);
 
-    UserInputService.InputBegan.Connect((input, gameProcessed) => {
-        if (!gameProcessed) {
-            if (input.UserInputType === Enum.UserInputType.MouseButton1) {
-                startCombo();
-
-                const now = tick();
-                if (now - lastSlashTime < SLASH_COOLDOWN) {
-                    return;
-                }
-                if (!track.IsPlaying) {
-                    lastSlashTime = now;
-                    //print("Registered a sword slash");
-
-                    track.Play();
-
-                    if (trail) {
-                        trail.Enabled = true;
-                    }
-
-                    playSound("rbxassetid://7118966167"); // Sword slash
-                    
-
-                    const hitboxReachedSignal = track.GetMarkerReachedSignal("Hit").Connect(() => {
-                        for (const [attachment] of lastTipPositions) {
-                            lastTipPositions.set(attachment, attachment.WorldPosition);
-                        }
-
-                        const alreadyHitNpcs = new Map<Instance, boolean>();
-
-                        renderStep = RunService.RenderStepped.Connect((dt) => {
-                        // Draw a ray from the previous tip position to the current tip position for a continuous trail
-                        for (const attachments of lastTipPositions) {
-                            const attachment = attachments[0];
-                            const lastAttachmentPos = attachments[1];
-
-                            let hit: boolean = false;
-
-                            const currAttachmentPos = attachment.WorldPosition;
-
-                            if (lastAttachmentPos) {
-                                const direction = currAttachmentPos?.sub(lastAttachmentPos);
-                                if (direction.Magnitude > 0.01) {
-                                    // Visualize the ray
-                                    const rayPart = createRayVisual(lastAttachmentPos, currAttachmentPos, direction);
-                                    task.delay(0.5, () => rayPart.Destroy());
-
-                                    // Cast a ray for hit detection
-                                    const raycastParams = new RaycastParams();
-                                    raycastParams.FilterDescendantsInstances = [character];
-                                    raycastParams.FilterType = Enum.RaycastFilterType.Exclude;
-                                    const result = Workspace.Raycast(lastAttachmentPos, direction, raycastParams);
-
-                                    const overlapParams = new OverlapParams();
-                                    overlapParams.AddToFilter([character]);
-                                    overlapParams.FilterType = Enum.RaycastFilterType.Exclude;
-                                    const radialHitbox = Workspace.GetPartBoundsInRadius(attachment.WorldPosition, 2, overlapParams);
-
-                                    for (const part of radialHitbox) {
-                                        const npcModel = part.FindFirstAncestorWhichIsA("Model");
-
-                                        if (!npcModel) {
-                                            return;
-                                        }
-
-                                        const humanoid = npcModel.FindFirstChild("Humanoid");
-                                        if (humanoid && !alreadyHitNpcs.get(npcModel)) {
-                                            alreadyHitNpcs.set(npcModel, true);
-                                            print("HIT BY RADIUS");
-                                            hit = true;
-
-                                            highlightHitEnemy(npcModel);
-
-                                            // Hit sound 
-                                            playSound("rbxassetid://6216173737", 1);
-                                        }
-                                    }
-
-                                    if (result && result.Instance.FindFirstAncestorWhichIsA("Model") && result.Instance.FindFirstAncestorWhichIsA("Model")?.FindFirstChild("Humanoid")) {
-                                        const npcModel = result.Instance.FindFirstAncestorWhichIsA("Model");
-
-                                        if (!npcModel) {
-                                            return;
-                                        }
-
-                                        const humanoid = npcModel.FindFirstChild("Humanoid");
-                                        if (humanoid && !alreadyHitNpcs.get(npcModel)) {
-                                            alreadyHitNpcs.set(npcModel, true);
-                                            hit = true;
-                                            // Make NPC glow white for a split second using Highlight
-                                            highlightHitEnemy(npcModel);
-
-                                            // Hit sound 
-                                            playSound("rbxassetid://6216173737", 1);
-                                        }
-                                    }
-
-                                    if (hit) {
-                                        hitPause(character, 0.07);
-                                    }
-                                }
-                            }
-
-                            lastTipPositions.set(attachment, currAttachmentPos);
-                        }
-                        })
-                    });
-
-                    
-
-                    track.Stopped.Connect(() => {
-                        hitboxReachedSignal.Disconnect();
-                        renderStep?.Disconnect();
-                        if (trail) {
-                            trail.Enabled = false;
-                        }
-                    })
-                }
+            // if it was the last attack, start a cooldown
+            if (comboIndex >= loadedAnimations.size()) {
+                isInComboCooldown = true;
+                task.delay(comboCooldownDuration, () => {
+                    isInComboCooldown = false;
+                })
             }
-        }
-    })
+		});
+	});
+
+	if (comboResetTask) task.cancel(comboResetTask);
+	comboResetTask = task.delay(comboResetTime, () => comboIndex = 0);
 }
 
-const sword = initializeSword();
+function bindInput(character: Character, attachments: Attachment[], trail?: Trail) {
+	UserInputService.InputBegan.Connect((input, gameProcessed) => {
+		if (!gameProcessed && input.UserInputType === Enum.UserInputType.MouseButton1) {
+			startCombo(character, attachments, trail);
+		}
+	});
+}
 
+// Bootstrap
+const sword = ReplicatedStorage.FindFirstChild("swords")?.FindFirstChild("wooden_sword")?.Clone();
 if (sword) {
-    sword.Parent = script.Parent;
-    weldSword(sword, CHARACTER);
-    setUpInput(CHARACTER, sword);
-}
+	sword.Parent = CHARACTER;
+	const handle = sword.FindFirstChild("Handle") as BasePart;
+	const grip = handle.FindFirstChild("RightGripAttachment") as Attachment;
+	const hand = CHARACTER.WaitForChild("RightHand") as BasePart;
+	const weld = new Instance("Motor6D");
+	weld.Name = "SwordWeld";
+	weld.Part0 = hand;
+	weld.Part1 = handle;
+	weld.C0 = grip.CFrame;
+	weld.Parent = hand;
 
+	const trail = handle.FindFirstChild("Trail") as Trail | undefined;
+	const bladeFolder = handle.FindFirstChild("BladeHitbox") as Folder;
+	const attachments = bladeFolder?.GetChildren().filter((v): v is Attachment => v.IsA("Attachment")) ?? [];
+
+	bindInput(CHARACTER, attachments, trail);
+}
