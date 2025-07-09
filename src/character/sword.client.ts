@@ -8,7 +8,7 @@ const PLAYER = Players.GetPlayerFromCharacter(CHARACTER);
 if (!PLAYER) error("COULDN'T FIND PLAYER");
 
 const ATTACK_ANIMATIONS = [
-	"rbxassetid://82296932537283", // Slash 1
+	"rbxassetid://82296932537283", // Slash 1 
 	"rbxassetid://86722564801489", // Slash 2
 ];
 
@@ -23,6 +23,7 @@ const comboResetTime = 0.7;
 let comboResetTask: thread | undefined;
 
 let isAttacking: boolean = false;
+let canContinueCombo: boolean = false;
 
 let isInComboCooldown = false;
 const comboCooldownDuration = 0.6; // time after the 2nd attack to attack again
@@ -151,15 +152,11 @@ function createHitboxRenderer(character: Character, attachments: Attachment[]) {
 }
 
 function startCombo(character: Character, attachments: Attachment[], trail?: Trail) {
-    if (isInComboCooldown || isAttacking) return;
-
-	if (comboIndex >= loadedAnimations.size()) {
-        comboIndex = 0;
-        return;
-    }
+    if (isInComboCooldown || isAttacking || comboIndex >= loadedAnimations.size()) return;
 
     isAttacking = true;
-    
+    canContinueCombo = false;
+
 	const track = loadedAnimations[comboIndex];
 
     if (comboIndex === 0) {
@@ -175,12 +172,21 @@ function startCombo(character: Character, attachments: Attachment[], trail?: Tra
 		const renderConn = createHitboxRenderer(character, attachments);
 		track.Stopped.Once(() => {
             isAttacking = false;
+            
+            if (canContinueCombo) {
+                comboIndex++;
+                startCombo(character, attachments, trail);
+            } else if (comboIndex >= loadedAnimations.size() - 1) {
+				lockCombo(comboCooldownDuration);
+			} else {
+				comboIndex = 0;
+			}
+
 			connection.Disconnect();
 			renderConn.Disconnect();
 			trail && (trail.Enabled = false);
 
             // if it was the last attack, start a cooldown
-            print(comboIndex, loadedAnimations.size())
             if (comboIndex >= loadedAnimations.size()) {
                 lockCombo(comboCooldownDuration)
                 isInComboCooldown = true;
@@ -191,16 +197,19 @@ function startCombo(character: Character, attachments: Attachment[], trail?: Tra
 		});
 	});
 
-    comboIndex++;
-
 	if (comboResetTask) task.cancel(comboResetTask);
-	comboResetTask = task.delay(comboResetTime, () => comboIndex = 0);
+	comboResetTask = task.delay(comboResetTime, () => {
+        if (!isAttacking) comboIndex = 0;
+    });
 }
 
 function bindInput(character: Character, attachments: Attachment[], trail?: Trail) {
 	UserInputService.InputBegan.Connect((input, gameProcessed) => {
 		if (!gameProcessed && input.UserInputType === Enum.UserInputType.MouseButton1) {
-			startCombo(character, attachments, trail);
+            if (isAttacking) {
+                canContinueCombo = true;
+            }
+			else startCombo(character, attachments, trail);
 		}
 	});
 }
