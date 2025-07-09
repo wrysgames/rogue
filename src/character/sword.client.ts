@@ -191,7 +191,6 @@ function createHitboxRenderer(character: Character, attachments: Attachment[]) {
 				}
 
                 // delete the ray visualizations
-                task.delay(0.1, () => rayPart.Destroy());
 			}
 			lastTipPositions.set(attachment, currPos);
 		}
