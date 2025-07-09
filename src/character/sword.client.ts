@@ -22,6 +22,8 @@ let comboIndex = 0;
 const comboResetTime = 0.7;
 let comboResetTask: thread | undefined;
 
+let isAttacking: boolean = false;
+
 let isInComboCooldown = false;
 const comboCooldownDuration = 0.6; // time after the 2nd attack to attack again
 
@@ -33,11 +35,13 @@ function lockCombo(duration: number) {
 	});
 }
 
-function playSound(soundId: string, volume = 0.5) {
+function playSound(soundId: string, options?: { volume?: number; pitch?: number; }) {
+	const { volume, pitch } = options ?? {};
 	const sound = new Instance("Sound");
 	sound.Parent = SoundService;
 	sound.SoundId = soundId;
-	sound.Volume = volume;
+	sound.Volume = volume ?? 1;
+	sound.PlaybackSpeed = pitch ?? 1;
 	sound.Play();
 	sound.Ended.Connect(() => sound.Destroy());
 }
@@ -128,13 +132,12 @@ function createHitboxRenderer(character: Character, attachments: Attachment[]) {
 
                 if (!hasHit && hits.size() > 0) {
                     hasHit = true;
-                    lockCombo(0.5); // Lock once per attack
                 }
 
 				for (const model of hits) {
 					highlightHitEnemy(model);
-					playSound("rbxassetid://6216173737", 1);
-					hitPause(character, 0.07);
+					playSound("rbxassetid://6216173737");
+					hitPause(character, 0.15);
 				}
 
                 // delete the ray visualizations
@@ -148,15 +151,16 @@ function createHitboxRenderer(character: Character, attachments: Attachment[]) {
 }
 
 function startCombo(character: Character, attachments: Attachment[], trail?: Trail) {
-    if (isInComboCooldown) return;
+    if (isInComboCooldown || isAttacking) return;
 
 	if (comboIndex >= loadedAnimations.size()) {
         comboIndex = 0;
         return;
     }
 
+    isAttacking = true;
+    
 	const track = loadedAnimations[comboIndex];
-	comboIndex++;
 
     if (comboIndex === 0) {
         for (const playing of ANIMATOR.GetPlayingAnimationTracks()) playing.Stop();
@@ -169,13 +173,16 @@ function startCombo(character: Character, attachments: Attachment[], trail?: Tra
 
 	const connection = track.GetMarkerReachedSignal("Hit").Connect(() => {
 		const renderConn = createHitboxRenderer(character, attachments);
-		track.Stopped.Connect(() => {
+		track.Stopped.Once(() => {
+            isAttacking = false;
 			connection.Disconnect();
 			renderConn.Disconnect();
 			trail && (trail.Enabled = false);
 
             // if it was the last attack, start a cooldown
+            print(comboIndex, loadedAnimations.size())
             if (comboIndex >= loadedAnimations.size()) {
+                lockCombo(comboCooldownDuration)
                 isInComboCooldown = true;
                 task.delay(comboCooldownDuration, () => {
                     isInComboCooldown = false;
@@ -183,6 +190,8 @@ function startCombo(character: Character, attachments: Attachment[], trail?: Tra
             }
 		});
 	});
+
+    comboIndex++;
 
 	if (comboResetTask) task.cancel(comboResetTask);
 	comboResetTask = task.delay(comboResetTime, () => comboIndex = 0);

@@ -12,8 +12,8 @@ if (character) {
     const animate = character.Animate;
     animate.run.RunAnim.AnimationId = WALK_ANIMATION_ID;
 
-    //animate.idle.Animation1.AnimationId = IDLE_ANIMATION_ID;
-    //animate.idle.Animation2.AnimationId = IDLE_ANIMATION_ID;
+    animate.idle.Animation1.AnimationId = IDLE_ANIMATION_ID;
+    animate.idle.Animation2.AnimationId = IDLE_ANIMATION_ID;
 
     animate.jump.JumpAnim.AnimationId = JUMP_ANIMATION_ID;
     animate.fall.FallAnim.AnimationId = FALL_ANIMATION_ID;
