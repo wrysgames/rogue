@@ -26,7 +26,7 @@ let isAttacking: boolean = false;
 let canContinueCombo: boolean = false;
 
 let isInComboCooldown = false;
-const comboCooldownDuration = 0.6; // time after the 2nd attack to attack again
+const comboCooldownDuration = 0.3; // time after the 2nd attack to attack again
 
 function lockCombo(duration: number) {
 	isInComboCooldown = true;
@@ -35,6 +35,21 @@ function lockCombo(duration: number) {
 		comboIndex = 0;
 	});
 }
+
+function applyKnockback(
+	target: Model,
+	fromPosition: Vector3,
+	force: number = 50,
+	upwardForce: number = 10
+) {
+	const hrp = target.FindFirstChild("HumanoidRootPart") as BasePart;
+	if (!hrp) return;
+
+	const direction = (hrp.Position.sub(fromPosition)).Unit;
+	hrp.ApplyImpulse((direction.mul(force).add(Vector3.yAxis.mul(upwardForce))).mul(hrp.AssemblyMass));
+    print("KNOCKED BACK")
+}
+
 
 function playSound(soundId: string, options?: { volume?: number; pitch?: number; }) {
 	const { volume, pitch } = options ?? {};
@@ -46,6 +61,32 @@ function playSound(soundId: string, options?: { volume?: number; pitch?: number;
 	sound.Play();
 	sound.Ended.Connect(() => sound.Destroy());
 }
+
+function spawnHitBurst(position: Vector3) {
+    const burst = new Instance("Part");
+    burst.Size = new Vector3(0.2, 0.2, 0.2);
+    burst.Anchored = true;
+    burst.CanCollide = false;
+    burst.Position = position;
+    burst.Transparency = 1;
+    burst.Parent = Workspace;
+    burst.CFrame = CFrame.lookAt(position, position.add(Workspace.CurrentCamera!.CFrame.LookVector));
+
+    const emitter = new Instance("ParticleEmitter");
+    emitter.Texture = "rbxassetid://6508928742";
+    emitter.Speed = new NumberRange(8);
+    emitter.Lifetime = new NumberRange(0.2);
+    emitter.Rate = 0;
+    emitter.EmissionDirection = Enum.NormalId.Front;
+    emitter.LightEmission = 0.5;
+    emitter.Size = new NumberSequence(0.5);
+    emitter.Color = new ColorSequence(Color3.fromRGB(255, 255, 255));
+    emitter.Parent = burst;
+
+    emitter.Emit(5);
+    task.delay(0.3, () => burst.Destroy());
+}
+
 
 function hitPause(character: Model, duration: number) {
 	const humanoid = character.FindFirstChild("Humanoid") as Humanoid | undefined;
@@ -139,6 +180,14 @@ function createHitboxRenderer(character: Character, attachments: Attachment[]) {
 					highlightHitEnemy(model);
 					playSound("rbxassetid://6216173737");
 					hitPause(character, 0.15);
+
+                    let contactPosition = currPos;
+                    if (result) {
+                        contactPosition = result.Position;
+                    }
+
+                    spawnHitBurst(contactPosition);
+                    applyKnockback(model, contactPosition, 80, 20)
 				}
 
                 // delete the ray visualizations
