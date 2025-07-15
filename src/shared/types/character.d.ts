@@ -2,7 +2,9 @@ export interface Character extends Model {
     Humanoid: Humanoid & {
         Animator: Animator;
     };
-    RightHand: BasePart;
+    RightHand: BasePart & {
+        RightGripAttachment: Attachment;
+    };
     LeftHand: BasePart;
     HumanoidRootPart: BasePart;
     Animate: LocalScript & {

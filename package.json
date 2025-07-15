@@ -5,7 +5,10 @@
   "main": "index.js",
   "scripts": {
     "build": "rbxtsc",
-    "watch": "rbxtsc -w"
+    "dev": "rbxtsc -w",
+    "watch": "rbxtsc -w",
+    "serve": "rojo serve"
+
   },
   "keywords": [],
   "author": "",
