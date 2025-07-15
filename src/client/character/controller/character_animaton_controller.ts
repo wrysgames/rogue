@@ -5,10 +5,6 @@ import { CharacterController } from "./character_controller";
 export class CharacterAnimationController {
     constructor(private characterController: CharacterController) {}
 
-    private getHumanoid(): Humanoid | undefined {
-        return this.characterController.getCharacter()?.Humanoid;
-    }
-
     private getAnimateScript() {
         return this.characterController.getCharacter()?.Animate;
     } 
