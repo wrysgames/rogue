@@ -1,0 +1,3 @@
+export const LIGHT_WEAPON_WEIGHT = 12.00;
+export const MEDIUM_WEAPON_WEIGHT = 24.00;
+export const HEAVY_WEAPON_WEIGHT = 48.00;
