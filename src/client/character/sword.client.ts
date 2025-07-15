@@ -1,11 +1,16 @@
 import { Players, ReplicatedStorage, RunService, SoundService, UserInputService, Workspace } from "@rbxts/services";
+import { getClientCharacter } from "client/shared/utils/get_character";
 import type { Character } from "shared/types/character";
 
-const CHARACTER = script.Parent as Character;
+const CHARACTER = getClientCharacter();
+
+if (!CHARACTER) {
+	throw "COULDN'T FIND CHARACTER";
+}
 const ANIMATOR = CHARACTER.Humanoid.Animator;
 const PLAYER = Players.GetPlayerFromCharacter(CHARACTER);
 
-if (!PLAYER) error("COULDN'T FIND PLAYER");
+if (!PLAYER) throw "COULDN'T FIND PLAYER";
 
 const ATTACK_ANIMATIONS = [
 	"rbxassetid://82296932537283", // Slash 1 

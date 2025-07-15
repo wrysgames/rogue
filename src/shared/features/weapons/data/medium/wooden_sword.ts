@@ -1,5 +1,5 @@
 import { MEDIUM_WEAPON_WEIGHT } from "shared/features/weapons/constants/weights";
-import type { Weapon } from "shared/types/weapon";
+import type { Weapon } from "shared/features/weapons/types";
 
 export = {
     id: "wooden_sword",

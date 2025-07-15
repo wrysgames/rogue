@@ -1,6 +1,6 @@
-import type { Character } from "shared/types/character"
+import { getClientCharacter } from "client/shared/utils/get_character";
 
-const character = script.Parent as Character | undefined;
+const character = getClientCharacter();
 
 const WALK_ANIMATION_ID = "rbxassetid://126125427113126"; // "rbxassetid://80450264938538";
 const IDLE_ANIMATION_ID = "rbxassetid://112034533114840";

@@ -1,5 +1,5 @@
 {
-	"name": "roblox-ts-game",
+	"name": "roguelike",
 	"globIgnorePaths": [
 		"**/package.json",
 		"**/tsconfig.json"
@@ -31,13 +31,7 @@
 			"$className": "StarterPlayer",
 			"StarterPlayerScripts": {
 				"$className": "StarterPlayerScripts",
-				"client": {
-					"$path": "out/client"
-				}
-			},
-			"StarterCharacterScripts": {
-				"$className": "StarterCharacterScripts",
-				"$path": "out/character"
+				"client": { "$path": "out/client" }
 			}
 		},
 		"Workspace": {
