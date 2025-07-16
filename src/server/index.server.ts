@@ -1,1 +1,1 @@
-print('Server')
+print('Server');

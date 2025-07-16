@@ -1,5 +1,5 @@
-import { HEAVY_WEAPON_WEIGHT } from 'shared/features/weapons/constants/weights'
-import type { Weapon } from 'shared/features/weapons/types'
+import { HEAVY_WEAPON_WEIGHT } from 'shared/features/weapons/constants/weights';
+import type { Weapon } from 'shared/features/weapons/types';
 
 export = {
 	id: 'wooden_axe',
@@ -19,4 +19,4 @@ export = {
 			critRate: 0.1,
 		},
 	],
-} satisfies Weapon
+} satisfies Weapon;
