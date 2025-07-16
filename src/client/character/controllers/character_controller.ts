@@ -1,7 +1,7 @@
 import { Controller, type OnStart } from '@flamework/core';
 import { Players } from '@rbxts/services';
 import { getClientCharacter } from 'client/shared/utils/get_character';
-import { Character } from 'shared/types/character';
+import type { Character } from 'shared/types/character';
 import { Memoizer } from 'shared/utils/memoizer';
 
 @Controller()
