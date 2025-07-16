@@ -5,7 +5,9 @@
 		"roguelike:out/shared/utils/memoizer@Memoizer": "shared/utils/memoizer@Memoizer",
 		"roguelike:out/client/character/controller/character_controller@CharacterController": "client/character/controller/character_controller@CharacterController",
 		"roguelike:out/client/character/controller/character_animaton_controller@CharacterController": "client/character/controller/character_animaton_controller@CharacterController",
-		"roguelike:out/client/character/controller/character_animaton_controller@CharacterAnimationController": "client/character/controller/character_animaton_controller@CharacterAnimationController"
+		"roguelike:out/client/character/controller/character_animaton_controller@CharacterAnimationController": "client/character/controller/character_animaton_controller@CharacterAnimationController",
+		"roguelike:out/client/character/controllers/character_controller@CharacterController": "client/character/controllers/character_controller@CharacterController",
+		"roguelike:out/client/character/controllers/character_animaton_controller@CharacterAnimationController": "client/character/controllers/character_animaton_controller@CharacterAnimationController"
 	},
 	"metadata": {}
 }

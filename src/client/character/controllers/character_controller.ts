@@ -16,6 +16,7 @@ export class CharacterController implements OnStart {
 
     public onStart(): void {
         this.connections.push(Players.LocalPlayer.CharacterAdded.Connect( () => this.characterMemoizer.clear() ));
+        print("Character memoization initialized");
     }
 
     public getCharacter(): Character | undefined {
