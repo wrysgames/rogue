@@ -7,13 +7,12 @@ export class CombatController implements OnStart {
 
 	constructor() {
 		this.inputManager = new InputManager();
-		this.inputManager.mapAction(Enum.KeyCode.E, () => {
-			print('hello world');
-		});
 	}
 
 	public onStart(): void {
 		this.inputManager.listen();
 		print('CombatController initialized');
 	}
+
+    
 }
