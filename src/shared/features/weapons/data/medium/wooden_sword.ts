@@ -1,22 +1,23 @@
-import { MEDIUM_WEAPON_WEIGHT } from 'shared/features/weapons/constants/weights';
 import type { Weapon } from 'shared/features/weapons/types';
 
 export = {
-	id: 'wooden_sword',
-	name: 'Wooden Sword',
-	weaponType: 'medium',
+	id: 'dagger_venom',
+	name: 'Dagger of Venom',
+	weaponType: 'light',
+	visualType: 'dagger',
+	tags: ['Slashing', 'BackstabCrit', 'ComboChain'],
+	baseStats: {
+		damage: 15,
+		critRate: 0.25,
+		knockback: 2,
+		attackSpeed: 1.5,
+	},
 	upgrades: [
-		{
-			damage: 14.0,
-			knockback: 1.0,
-			weight: MEDIUM_WEAPON_WEIGHT,
-			critRate: 0.05,
-		},
-		{
-			damage: 22.0,
-			knockback: 1.0,
-			weight: MEDIUM_WEAPON_WEIGHT,
-			critRate: 0.05,
-		},
+		{ stats: { damage: 5 }, description: '+5 base damage' },
+		{ stats: { critRate: 0.1 }, description: '+10% crit chance' },
 	],
+	obtainable: {
+		chests: true,
+		drops: true,
+	},
 } satisfies Weapon;

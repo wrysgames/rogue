@@ -1,19 +1,40 @@
 export type WeaponArchetype = 'light' | 'medium' | 'heavy';
+export type WeaponVisualType = 'scythe' | 'sword' | 'axe' | 'dagger';
+
+export type WeaponTag =
+	| 'Slashing'
+	| 'Pierching'
+	| 'Blunt'
+	| 'Multihit'
+	| 'Cleaving'
+	| 'HeavyImpact'
+	| 'BackstabCrit'
+	| 'ComboChain';
 
 export interface WeaponStats {
 	damage: number;
-	critRate: number;
+	critRate: number; // 0.0–1.0
 	knockback: number;
-	weight?: number;
-	cost?: number;
+	attackSpeed?: number; // hits/sec or time between swings
+}
+
+export interface WeaponUpgrade {
+	stats: Partial<WeaponStats>;
+	description?: string;
 }
 
 export interface Weapon {
 	id: string;
 	name: string;
+	visualType?: WeaponVisualType;
+	tags: WeaponTag[];
 	weaponType: WeaponArchetype;
-	upgrades: WeaponStats[];
+	baseStats: WeaponStats;
+
+	upgrades?: WeaponUpgrade[];
+
 	model?: Model;
+
 	obtainable?: {
 		chests?: boolean;
 		drops?: boolean;
