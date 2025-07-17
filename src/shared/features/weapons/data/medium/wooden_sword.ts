@@ -1,5 +1,6 @@
 import { ReplicatedStorage } from '@rbxts/services';
 import type { Weapon } from 'shared/features/weapons/types';
+import { validateWeaponModel } from '../../utils/validate_weapon';
 
 export = {
 	id: 'wooden_sword',
@@ -21,5 +22,5 @@ export = {
 		chests: true,
 		drops: true,
 	},
-	model: ReplicatedStorage.weapons.medium.FindFirstChild('wooden_sword') as Model | undefined,
+	model: validateWeaponModel(ReplicatedStorage.weapons.medium.FindFirstChild('wooden_sword')),
 } satisfies Weapon;

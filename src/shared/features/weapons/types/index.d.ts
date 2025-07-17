@@ -33,11 +33,18 @@ export interface Weapon {
 
 	upgrades?: WeaponUpgrade[];
 
-	model?: Model;
+	model?: WeaponModel;
 
 	obtainable?: {
 		chests?: boolean;
 		drops?: boolean;
+	};
+}
+
+export interface WeaponModel extends Model {
+	Handle: BasePart & {
+		BladeHitbox: Folder;
+		RightGripAttachment: Attachment;
 	};
 }
 

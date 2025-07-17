@@ -8,7 +8,7 @@ import type { Weapon } from 'shared/features/weapons/types';
 @Controller()
 export class CombatController implements OnStart {
 	private readonly inputManager: InputManager;
-	private equippedWeapon: Weapon;
+	private equippedWeapon: Weapon | undefined;
 	private isAttacking: boolean = false;
 
 	constructor(
@@ -16,13 +16,47 @@ export class CombatController implements OnStart {
 		private characterAnimationController: CharacterAnimationController,
 	) {
 		this.inputManager = new InputManager();
-		this.equippedWeapon = wooden_sword;
+		this.equippedWeapon = undefined;
 	}
 
 	public onStart(): void {
 		this.inputManager.mapAction(Enum.UserInputType.MouseButton1, () => this.handleAttack());
+		this.inputManager.mapAction(Enum.KeyCode.Q, () => {
+			if (!this.equippedWeapon) {
+				this.equipWeapon(wooden_sword);
+			}
+		});
 		this.inputManager.listen();
 		print('CombatController initialized');
+	}
+
+	public equipWeapon(weapon: Weapon): void {
+		const character = this.characterController.getCharacter();
+		if (!character) {
+			warn('[CombatController]: Character not found');
+			return;
+		}
+
+		const model = weapon.model;
+		if (!model) {
+			warn(`[CombatController]: Weapon \'${weapon.id} does not have a model attribute`);
+			return;
+		}
+
+		const clonedWeapon = model.Clone();
+		clonedWeapon.Parent = character;
+
+		const handle = clonedWeapon.Handle;
+		const grip = handle.RightGripAttachment;
+		const hand = character.RightHand;
+		const weld = new Instance('Motor6D');
+		weld.Name = 'SwordWeld';
+		weld.Part0 = hand;
+		weld.Part1 = handle;
+		weld.C0 = grip.CFrame;
+		weld.Parent = hand;
+
+		this.equippedWeapon = weapon;
 	}
 
 	public handleAttack(): void {
