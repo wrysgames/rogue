@@ -1,3 +1,4 @@
+/*
 import { Players, ReplicatedStorage, RunService, SoundService, UserInputService, Workspace } from '@rbxts/services';
 import { getClientCharacter } from 'client/shared/utils/get_character';
 import type { Character } from 'shared/types/character';
@@ -264,3 +265,4 @@ if (sword) {
 
 	bindInput(CHARACTER, attachments, trail);
 }
+*/

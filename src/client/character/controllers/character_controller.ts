@@ -6,17 +6,31 @@ import { Memoizer } from 'shared/utils/memoizer';
 
 @Controller()
 export class CharacterController implements OnStart {
-	private characterMemoizer: Memoizer<Character | undefined>;
-	private connections: RBXScriptConnection[];
+	private readonly characterMemoizer: Memoizer<Character | undefined>;
+	private readonly connections: RBXScriptConnection[];
+	private readonly onCharacterAddedActions: ((character: Character) => void)[];
 
 	constructor() {
 		this.characterMemoizer = new Memoizer<Character | undefined>(() => getClientCharacter());
 		this.connections = [];
+		this.onCharacterAddedActions = [];
 	}
 
 	public onStart(): void {
-		this.connections.push(Players.LocalPlayer.CharacterAdded.Connect(() => this.characterMemoizer.clear()));
+		this.connections.push(
+			Players.LocalPlayer.CharacterAdded.Connect((character) => {
+				this.characterMemoizer.clear();
+				this.onCharacterAddedActions.forEach((action) => action(character as Character));
+			}),
+		);
 		print('Character memoization initialized');
+	}
+
+	public addCharacterAddedCallback(action: (character: Character) => void): void {
+		// Prevent multiple references of the same function being added to the array
+		if (!this.onCharacterAddedActions.includes(action)) {
+			this.onCharacterAddedActions.push(action);
+		}
 	}
 
 	public getCharacter(): Character | undefined {

@@ -1,11 +1,11 @@
 import type { Weapon } from 'shared/features/weapons/types';
 
 export = {
-	id: 'dagger_venom',
-	name: 'Dagger of Venom',
+	id: 'wooden_sword',
+	name: 'Wooden Sword',
 	weaponType: 'light',
-	visualType: 'dagger',
-	tags: ['Slashing', 'BackstabCrit', 'ComboChain'],
+	visualType: 'sword',
+	tags: ['Slashing'],
 	baseStats: {
 		damage: 15,
 		critRate: 0.25,

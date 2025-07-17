@@ -10,6 +10,10 @@ export class CharacterAnimationController implements OnStart {
 		return this.characterController.getCharacter()?.Animate;
 	}
 
+	private getAnimator(): Animator | undefined {
+		return this.characterController.getCharacter()?.Humanoid.Animator;
+	}
+
 	public onStart(): void {
 		this.setWalkAnimation(WALK_ANIMATION_ID);
 		this.setRunAnimation(WALK_ANIMATION_ID);
@@ -17,6 +21,28 @@ export class CharacterAnimationController implements OnStart {
 		this.setFallAnimation(FALL_ANIMATION_ID);
 		this.setJumpAnimation(JUMP_ANIMATION_ID);
 		print('Core animations initialized');
+	}
+
+	public loadAnimation(
+		animationId: string,
+		options?: {
+			looped?: boolean;
+			playbackSpeed?: number;
+		},
+	): AnimationTrack | undefined {
+		const animator = this.getAnimator();
+		if (animator) {
+			const animation = new Instance('Animation');
+			animation.AnimationId = animationId;
+			const track = animator.LoadAnimation(animation);
+
+			track.Looped = options?.looped || false;
+			track.AdjustSpeed(options?.playbackSpeed || 1);
+
+			return track;
+		}
+
+		return undefined;
 	}
 
 	public setRunAnimation(animationId: string) {

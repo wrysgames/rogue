@@ -40,3 +40,10 @@ export interface Weapon {
 		drops?: boolean;
 	};
 }
+
+export interface WeaponAnimationSet {
+	idle: string;
+	jump: string;
+	walk: string;
+	fall: string;
+}
