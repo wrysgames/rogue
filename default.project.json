@@ -25,6 +25,9 @@
 			},
 			"shared": {
 				"$path": "out/shared"
+			},
+			"weapons": {
+				"$path": "out/weapons"
 			}
 		},
 		"StarterPlayer": {
