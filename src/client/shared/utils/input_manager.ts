@@ -3,10 +3,12 @@ import { UserInputService } from '@rbxts/services';
 export class InputManager {
 	private readonly inputs: Map<Enum.UserInputType | Enum.KeyCode, (() => void)[]>;
 	private readonly connections: RBXScriptConnection[];
+	private isActive: boolean;
 
 	constructor() {
 		this.inputs = new Map();
 		this.connections = [];
+		this.isActive = false;
 	}
 
 	public mapAction(keybind: Enum.KeyCode | Enum.UserInputType, func: () => void): void {
@@ -18,14 +20,22 @@ export class InputManager {
 		}
 	}
 
-	public unmapAction(keybind: Enum.KeyCode | Enum.UserInputType, func: () => void): void {
+	public unmapAction(keybind: Enum.KeyCode | Enum.UserInputType, func?: () => void): void {
 		const keybindKey = this.inputs.get(keybind);
 		if (keybindKey) {
-			keybindKey.filter((val) => val !== func);
+			if (func) {
+				keybindKey.filter((val) => val !== func);
+			} else {
+				keybindKey.clear();
+			}
 		}
 	}
 
 	public listen(): void {
+		if (this.isActive) {
+			return;
+		}
+
 		this.connections.push(
 			UserInputService.InputBegan.Connect((input, gameProcessed) => {
 				if (!gameProcessed) {
@@ -45,11 +55,14 @@ export class InputManager {
 				}
 			}),
 		);
+
+		this.isActive = true;
 	}
 
 	public cleanUp(): void {
 		this.connections.forEach((connection) => {
 			connection.Disconnect();
 		});
+		this.isActive = false;
 	}
 }
