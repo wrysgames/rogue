@@ -5,7 +5,7 @@ import { ServerEvents } from 'server/shared/utils/networking/events';
 export class CombatService implements OnStart {
 	public onStart(): void {
 		ServerEvents.hitHumanoid.connect((player, humanoid) => {
-			print(player, humanoid);
+			humanoid.TakeDamage(10);
 		});
 	}
 }

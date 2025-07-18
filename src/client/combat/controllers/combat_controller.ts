@@ -6,6 +6,7 @@ import { InputManager } from 'client/shared/utils/input_manager';
 import { ClientEvents } from 'client/shared/utils/networking/events';
 import wooden_sword from 'shared/features/weapons/data/medium/wooden_sword';
 import type { Weapon, WeaponModel } from 'shared/features/weapons/types';
+import { addHighlightToModel } from 'shared/utils/highlight';
 
 @Controller()
 export class CombatController implements OnStart {
@@ -55,6 +56,9 @@ export class CombatController implements OnStart {
 							if (!hits.has(model)) {
 								hits.add(model);
 								ClientEvents.hitHumanoid.fire(humanoid);
+
+								const highlight = addHighlightToModel(model);
+								task.delay(0.085, () => highlight.Destroy());
 							}
 						}
 					}
