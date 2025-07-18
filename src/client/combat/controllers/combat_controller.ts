@@ -47,15 +47,9 @@ export class CombatController implements OnStart {
 		clonedWeapon.Parent = character;
 
 		const handle = clonedWeapon.Handle;
-		const grip = handle.RightGripAttachment;
-		const hand = character.RightHand;
-		const weld = new Instance('Motor6D');
-		weld.Name = 'SwordWeld';
-		weld.Part0 = hand;
-		weld.Part1 = handle;
-		weld.C0 = grip.CFrame;
-		weld.Parent = hand;
+		const handleGrip = handle.RightGripAttachment;
 
+		this.characterController.mountPartToRightHand(handle, handleGrip.CFrame);
 		this.equippedWeapon = weapon;
 	}
 

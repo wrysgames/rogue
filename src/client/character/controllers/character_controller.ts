@@ -37,7 +37,7 @@ export class CharacterController implements OnStart {
 		return this.characterMemoizer.get();
 	}
 
-	public mountPartToRightHand(part: BasePart, cframe?: CFrame) {
+	public mountPartToRightHand(part: BasePart, cframe?: CFrame): Motor6D | undefined {
 		const character = this.characterMemoizer.get();
 
 		if (!character) {
@@ -46,13 +46,18 @@ export class CharacterController implements OnStart {
 
 		const rightHand = character.RightHand;
 
+		const handGrip = rightHand.RightGripAttachment;
+
 		const motor = new Instance('Motor6D');
 		motor.Part0 = rightHand;
 		motor.Part1 = part;
 		motor.Parent = rightHand;
 
 		if (cframe) {
-			motor.C0 = cframe;
+			motor.C0 = handGrip.CFrame;
+			motor.C1 = cframe;
 		}
+
+		return motor;
 	}
 }
