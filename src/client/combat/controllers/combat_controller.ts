@@ -29,11 +29,11 @@ export class CombatController implements OnStart {
 	private enableWeaponHitbox(): void {
 		if (this.isHitboxActive) return;
 
+		const hits = new Set<Model>();
+
 		this.hitboxConnection = RunService.RenderStepped.Connect((dt) => {
 			if (!this.equippedWeaponModel) return;
 			const character = this.characterController.getCharacter();
-
-			const hits = new Set<Model>();
 
 			// for each attachment in the weapon's hitbox folder, draw a sphere and detect parts inside of that sphere
 			for (const attachment of this.equippedWeaponModel.Handle.Hitboxes.GetChildren()) {
@@ -50,10 +50,6 @@ export class CombatController implements OnStart {
 						}
 					}
 				}
-			}
-
-			for (const model of hits) {
-				print(model);
 			}
 		});
 
@@ -114,7 +110,20 @@ export class CombatController implements OnStart {
 
 		const track = this.characterAnimationController.loadAnimation('rbxassetid://82296932537283');
 		if (track) {
+			this.isAttacking = true;
 			track.Play();
+
+			track.KeyframeReached.Connect((keyframe) => {
+				if (keyframe === 'Hit') {
+					this.enableWeaponHitbox();
+				}
+			});
+
+			track.Ended.Connect(() => {
+				this.isAttacking = false;
+				this.disableWeaponHitbox();
+				track.Destroy();
+			});
 		} else {
 			warn("[CombatController]: Animation track couldn't be played");
 		}

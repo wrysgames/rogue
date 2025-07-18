@@ -56,6 +56,7 @@ export class CharacterAnimationController implements OnStart {
 	public setWalkAnimation(animationId: string) {
 		const animateScript = this.getAnimateScript();
 		if (animateScript) {
+			animateScript.WaitForChild('walk');
 			animateScript.walk.WalkAnim.AnimationId = animationId;
 		}
 	}
