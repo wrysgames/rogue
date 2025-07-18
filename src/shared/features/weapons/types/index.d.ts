@@ -43,7 +43,7 @@ export interface Weapon {
 
 export interface WeaponModel extends Model {
 	Handle: BasePart & {
-		BladeHitbox: Folder;
+		Hitboxes: Folder;
 		RightGripAttachment: Attachment;
 	};
 }

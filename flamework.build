@@ -10,7 +10,8 @@
 		"roguelike:out/client/character/controllers/character_animaton_controller@CharacterAnimationController": "client/character/controllers/character_animaton_controller@CharacterAnimationController",
 		"roguelike:out/client/combat/controllers/combat_controller@CharacterController": "client/combat/controllers/combat_controller@CharacterController",
 		"roguelike:out/client/combat/controllers/combat_controller@CombatController": "client/combat/controllers/combat_controller@CombatController",
-		"roguelike:out/client/shared/utils/input_manager@InputManager": "client/shared/utils/input_manager@InputManager"
+		"roguelike:out/client/shared/utils/input_manager@InputManager": "client/shared/utils/input_manager@InputManager",
+		"roguelike:out/client/character/controllers/character_animation_controller@CharacterAnimationController": "client/character/controllers/character_animation_controller@CharacterAnimationController"
 	},
 	"metadata": {}
 }

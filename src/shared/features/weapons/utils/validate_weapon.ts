@@ -18,7 +18,7 @@ export function validateWeaponModel(weapon: Instance | undefined): WeaponModel |
 		return;
 	}
 
-	if (!handle.FindFirstChild('BladeHitbox')) {
+	if (!handle.FindFirstChild('Hitboxes')) {
 		warn('Weapon does not have hitbox attachments');
 		return;
 	}

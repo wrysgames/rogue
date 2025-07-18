@@ -1,15 +1,21 @@
 import { Controller, type OnStart } from '@flamework/core';
-import type { CharacterAnimationController } from 'client/character/controllers/character_animaton_controller';
+import { RunService, Workspace } from '@rbxts/services';
+import type { CharacterAnimationController } from 'client/character/controllers/character_animation_controller';
 import type { CharacterController } from 'client/character/controllers/character_controller';
 import { InputManager } from 'client/shared/utils/input_manager';
 import wooden_sword from 'shared/features/weapons/data/medium/wooden_sword';
-import type { Weapon } from 'shared/features/weapons/types';
+import type { Weapon, WeaponModel } from 'shared/features/weapons/types';
 
 @Controller()
 export class CombatController implements OnStart {
 	private readonly inputManager: InputManager;
 	private equippedWeapon: Weapon | undefined;
+    private equippedWeaponModel: WeaponModel | undefined;
 	private isAttacking: boolean = false;
+
+    // Hitbox attributes
+    private isHitboxActive: boolean = false;
+    private hitboxConnection: RBXScriptConnection | undefined;
 
 	constructor(
 		private characterController: CharacterController,
@@ -17,7 +23,49 @@ export class CombatController implements OnStart {
 	) {
 		this.inputManager = new InputManager();
 		this.equippedWeapon = undefined;
+        this.equippedWeaponModel = undefined;
 	}
+
+    private enableWeaponHitbox(): void {
+        if (this.isHitboxActive) return;
+
+        this.hitboxConnection = RunService.RenderStepped.Connect((dt) => {
+            if (!this.equippedWeaponModel) return;
+            const character = this.characterController.getCharacter();
+
+            const hits = new Set<Model>();
+
+            // for each attachment in the weapon's hitbox folder, draw a sphere and detect parts inside of that sphere
+            for (const attachment of this.equippedWeaponModel.Handle.Hitboxes.GetChildren()) {
+                if (attachment.IsA("Attachment")) {
+                    const overlapParams = new OverlapParams();
+                    overlapParams.FilterDescendantsInstances = character ? [character] : [];
+                    overlapParams.FilterType = Enum.RaycastFilterType.Exclude;
+                    const parts = Workspace.GetPartBoundsInRadius(attachment.WorldPosition, 2, overlapParams);
+
+                    for (const part of parts) {
+                        const model = part.FindFirstAncestorOfClass('Model');
+                        if (model && model.FindFirstChild('Humanoid')) {
+                            hits.add(model);
+                        }
+                    }
+                }
+            }
+
+            for (const model of hits) {
+                print(model);
+            }
+        });
+        
+        this.isHitboxActive = true;
+    }
+
+    private disableWeaponHitbox(): void {
+        if (!this.isHitboxActive) return;
+        if (this.hitboxConnection) this.hitboxConnection.Disconnect();
+
+        this.isHitboxActive = false;
+    }
 
 	public onStart(): void {
 		this.inputManager.mapAction(Enum.UserInputType.MouseButton1, () => this.handleAttack());
@@ -51,6 +99,7 @@ export class CombatController implements OnStart {
 
 		this.characterController.mountPartToRightHand(handle, handleGrip.CFrame);
 		this.equippedWeapon = weapon;
+        this.equippedWeaponModel = clonedWeapon;
 	}
 
 	public handleAttack(): void {

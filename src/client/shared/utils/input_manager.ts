@@ -59,6 +59,10 @@ export class InputManager {
 		this.isActive = true;
 	}
 
+    public stop(): void {
+        this.isActive = false;
+    }
+
 	public cleanUp(): void {
 		this.connections.forEach((connection) => {
 			connection.Disconnect();

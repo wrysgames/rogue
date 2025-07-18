@@ -1,13 +1,14 @@
 import { Controller, OnStart } from '@flamework/core';
 import { FALL_ANIMATION_ID, IDLE_ANIMATION_ID, JUMP_ANIMATION_ID, WALK_ANIMATION_ID } from '../constants/animation';
 import { CharacterController } from './character_controller';
+import { AnimateScript } from 'shared/types/character';
 
 @Controller()
 export class CharacterAnimationController implements OnStart {
 	constructor(private characterController: CharacterController) {}
 
-	private getAnimateScript() {
-		return this.characterController.getCharacter()?.Animate;
+	private getAnimateScript(): AnimateScript | undefined {
+		return this.characterController.getCharacter()?.WaitForChild("Animate") as AnimateScript | undefined;
 	}
 
 	private getAnimator(): Animator | undefined {
