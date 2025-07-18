@@ -12,7 +12,10 @@
 		"roguelike:out/client/combat/controllers/combat_controller@CombatController": "client/combat/controllers/combat_controller@CombatController",
 		"roguelike:out/client/shared/utils/input_manager@InputManager": "client/shared/utils/input_manager@InputManager",
 		"roguelike:out/client/character/controllers/character_animation_controller@CharacterAnimationController": "client/character/controllers/character_animation_controller@CharacterAnimationController",
-		"roguelike:out/shared/utils/networking@GlobalFunctions": "shared/utils/networking@GlobalFunctions"
+		"roguelike:out/shared/utils/networking@GlobalFunctions": "shared/utils/networking@GlobalFunctions",
+		"roguelike:out/server/combat/services/combat_service@CombatService": "server/combat/services/combat_service@CombatService",
+		"roguelike:out/shared/utils/networking/functions@GlobalFunctions": "shared/utils/networking/functions@GlobalFunctions",
+		"roguelike:out/shared/utils/networking/events@GlobalEvents": "shared/utils/networking/events@GlobalEvents"
 	},
 	"metadata": {}
 }

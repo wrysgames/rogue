@@ -3,6 +3,7 @@ import { RunService, Workspace } from '@rbxts/services';
 import type { CharacterAnimationController } from 'client/character/controllers/character_animation_controller';
 import type { CharacterController } from 'client/character/controllers/character_controller';
 import { InputManager } from 'client/shared/utils/input_manager';
+import { ClientEvents } from 'client/shared/utils/networking/events';
 import wooden_sword from 'shared/features/weapons/data/medium/wooden_sword';
 import type { Weapon, WeaponModel } from 'shared/features/weapons/types';
 
@@ -49,7 +50,12 @@ export class CombatController implements OnStart {
 					for (const part of parts) {
 						const model = part.FindFirstAncestorOfClass('Model');
 						if (model && model.FindFirstChild('Humanoid')) {
-							hits.add(model);
+							const humanoid = model.FindFirstChild('Humanoid') as Humanoid;
+
+							if (!hits.has(model)) {
+								hits.add(model);
+								ClientEvents.hitHumanoid.fire(humanoid);
+							}
 						}
 					}
 				}
