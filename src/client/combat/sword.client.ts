@@ -15,7 +15,7 @@ if (!PLAYER) throw "COULDN'T FIND PLAYER";
 
 const ATTACK_ANIMATIONS = [
 	'rbxassetid://82296932537283', // Slash 1
-	'rbxassetid://86722564801489', // Slash 2
+	'rbxassetid://103056715653246', // Slash 2
 ];
 
 const loadedAnimations = ATTACK_ANIMATIONS.map((id) => {

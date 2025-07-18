@@ -17,6 +17,9 @@ export class CombatController implements OnStart {
 	private isHitboxActive: boolean = false;
 	private hitboxConnection: RBXScriptConnection | undefined;
 
+	// Combo attributes
+	private comboIndex: number = 0;
+
 	constructor(
 		private characterController: CharacterController,
 		private characterAnimationController: CharacterAnimationController,
@@ -100,6 +103,7 @@ export class CombatController implements OnStart {
 
 	public handleAttack(): void {
 		if (this.isAttacking) return;
+		if (!this.equippedWeapon) return;
 
 		const character = this.characterController.getCharacter();
 
@@ -108,7 +112,18 @@ export class CombatController implements OnStart {
 			return;
 		}
 
-		const track = this.characterAnimationController.loadAnimation('rbxassetid://82296932537283');
+		const ATTACK_ANIMATIONS = [
+			'rbxassetid://82296932537283', // Slash 1
+			'rbxassetid://103056715653246', // Slash 2
+		];
+
+		if (this.comboIndex >= ATTACK_ANIMATIONS.size()) {
+			this.comboIndex = 0;
+		}
+
+		const track = this.characterAnimationController.loadAnimation(ATTACK_ANIMATIONS[this.comboIndex]);
+		this.comboIndex++;
+
 		if (track) {
 			this.isAttacking = true;
 			track.Play();
